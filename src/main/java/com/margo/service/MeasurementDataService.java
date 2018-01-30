@@ -4,14 +4,11 @@ import com.margo.domain.Sensor;
 import com.margo.domain.SensorData;
 import com.margo.domain.Station;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
-import java.util.OptionalDouble;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Objects;
 
 /**
  * Created by pglg on 30.01.2018.
@@ -28,16 +25,17 @@ public class MeasurementDataService {
                 .filter(s -> s.city.name.equals(city))
                 .flatMap(s ->
                         Arrays.stream(restTemplate.getForObject(FIND_ALL_SENSORS_FOR_STATION_EXTERNAL_API_BASIC_URL,
-                                Sensor[].class, String.valueOf(s)))
+                                Sensor[].class, s.id))
                                 .filter(se -> se.param.paramCode.equals(paramType)))
-                .flatMap(se ->
-                        Arrays.stream(restTemplate.getForObject(GET_MEASUREMENT_DATA_FOR_SENSOR_EXTERNAL_API_BASIC_URL,
-                                SensorData[].class, se.id))
-                                .flatMap(sd -> sd.values.stream())
+                .map(se ->
+                        restTemplate.getForObject(GET_MEASUREMENT_DATA_FOR_SENSOR_EXTERNAL_API_BASIC_URL,
+                                SensorData.class, se.id).values.stream()
+                                .filter(sed-> Objects.nonNull(sed.value))
+                                .max((a,b)->a.date.isAfter(b.date) ? 1 : -1)
                 )
-                .mapToDouble(sed -> sed.value)
+                .mapToDouble(sed->sed.get().value)
                 .average()
-                .orElse(-1);
+                .getAsDouble();
 
     }
 

@@ -18,9 +18,11 @@ public class MainController {
     private MeasurementDataService measurementDataService;
 
     @GetMapping("/measurements/cities/{city}/paramTypes/{paramType}")
-    public Double getAvgMeasurementFromStationsInCity(@PathVariable String city,
+    public String getAvgMeasurementFromStationsInCity(@PathVariable String city,
                                                       @PathVariable String paramType){
 
-        return measurementDataService.getMeasurement(city,paramType);
+        Double measurement = measurementDataService.getMeasurement(city, paramType);
+
+        return String.format("%.2f",measurement);
     }
 }
